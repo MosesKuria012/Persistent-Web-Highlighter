@@ -118,6 +118,7 @@ Wait about 60 seconds for the project to provision.
 In the left sidebar, go to **SQL Editor**. Paste and run the following:
 
 ```sql
+-- Run in Supabase SQL Editor
 CREATE TABLE IF NOT EXISTS highlights (
   id                TEXT PRIMARY KEY,
   text              TEXT NOT NULL,
@@ -135,12 +136,14 @@ CREATE TABLE IF NOT EXISTS highlights (
 
 CREATE INDEX IF NOT EXISTS highlights_url_idx       ON highlights(url);
 CREATE INDEX IF NOT EXISTS highlights_timestamp_idx ON highlights(timestamp DESC);
-
 ALTER TABLE highlights DISABLE ROW LEVEL SECURITY;
 GRANT ALL ON TABLE highlights TO anon;
 GRANT ALL ON TABLE highlights TO authenticated;
 GRANT USAGE ON SCHEMA public TO anon;
 GRANT USAGE ON SCHEMA public TO authenticated;
+
+-- Add tags column if upgrading from earlier version
+ALTER TABLE highlights ADD COLUMN IF NOT EXISTS tags JSONB DEFAULT '[]';
 ```
 
 ### Step 4 — Get your credentials
@@ -252,6 +255,9 @@ Not yet as a built-in feature. Your data is accessible directly in the Supabase 
 
 **The extension slowed down my browser. What should I do?**
 This should not happen under normal use. If you have accumulated tens of thousands of highlights on a single page, the restore-on-load process could take a noticeable moment. If you experience this, use the auto-delete settings to prune old highlights.
+
+**Does it work on PDFs?**
+No. It does not support PDFs, social media. And for pages that require logins it will require that you be logged in to be taken directly to your highlight.
 
 **I found a bug. Where do I report it?**
 Open an issue on the GitHub repository with the page URL where it happened, what you were trying to highlight, and what went wrong. Screenshots help.
