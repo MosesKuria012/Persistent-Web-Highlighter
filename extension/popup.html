@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Persistent Web Highlighter</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <div id="app">
+    <header>
+      <div class="header-left">
+        <svg class="logo-icon" width="16" height="16" viewBox="0 0 24 24" fill="none">
+          <path d="M3 5h12M3 8h9M3 11h12M3 14h7" stroke="#fbbf24" stroke-width="2.5" stroke-linecap="round"/>
+          <path d="M15 10l4 4-2 6-5-3 3-7z" fill="#fbbf24"/>
+        </svg>
+        <span class="header-title">Persistent Web Highlighter</span>
+      </div>
+      <div class="header-actions">
+        <span id="highlight-count" class="badge">0</span>
+        <a href="#" id="open-dashboard" class="icon-btn" title="Open dashboard">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        </a>
+      </div>
+    </header>
+
+    <div id="highlight-list-container">
+      <div id="empty-state" class="hidden">
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none">
+          <path d="M3 5h12M3 8h9M3 11h12M3 14h7" stroke="#2e2e50" stroke-width="2" stroke-linecap="round"/>
+          <path d="M15 10l4 4-2 6-5-3 3-7z" fill="#2e2e50"/>
+        </svg>
+        <p class="empty-title">No highlights on this page</p>
+        <p class="empty-sub">Select any text and choose a color.</p>
+      </div>
+      <ul id="highlight-list"></ul>
+    </div>
+
+    <footer>
+      <span>Select text → pick a color → saved</span>
+    </footer>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>
