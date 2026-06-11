@@ -525,6 +525,8 @@ CREATE TRIGGER highlights_rate_limit
     urlEl.href = h.url;
     urlEl.textContent = displayUrl;
     urlEl.title = h.url;
+    urlEl.target = '_blank';
+    urlEl.rel = 'noopener noreferrer';
     urlEl.addEventListener('click', e => e.stopPropagation());
 
     const timeEl = document.createElement('span');
@@ -573,24 +575,15 @@ CREATE TRIGGER highlights_rate_limit
 
   // ── Open & Scroll ─────────────────────────────────────────────────────────────
   async function openAndScrollTo(h) {
-    const tabs = await chrome.tabs.query({ url: h.url + '*' });
-    let tab;
-    if (tabs.length) {
-      tab = tabs[0];
-      await chrome.tabs.update(tab.id, { active: true });
-      await chrome.windows.update(tab.windowId, { focused: true });
-    } else {
-      tab = await chrome.tabs.create({ url: h.url });
-      await new Promise(resolve => {
-        chrome.tabs.onUpdated.addListener(function l(id, info) {
-          if (id === tab.id && info.status === 'complete') {
-            chrome.tabs.onUpdated.removeListener(l); resolve();
-          }
-        });
-      });
-      await new Promise(r => setTimeout(r, 800));
-    }
-    chrome.tabs.sendMessage(tab.id, { type: 'SCROLL_TO_HIGHLIGHT', id: h.id }).catch(() => {});
+    // Always open in a new tab — preserves the user's current context (dashboard)
+    const tab = await chrome.tabs.create({ url: h.url, active: true });
+    chrome.tabs.onUpdated.addListener(function listener(tabId, info) {
+      if (tabId !== tab.id || info.status !== 'complete') return;
+      chrome.tabs.onUpdated.removeListener(listener);
+      setTimeout(() => {
+        chrome.tabs.sendMessage(tab.id, { type: 'SCROLL_TO_HIGHLIGHT', id: h.id }).catch(() => {});
+      }, 800);
+    });
   }
 
   // ── Delete ────────────────────────────────────────────────────────────────────
