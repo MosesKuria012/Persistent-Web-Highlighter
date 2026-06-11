@@ -114,7 +114,7 @@ extension/
 
 ---
 
-## Installation
+## Installation and Usage
 
 ### Load Unpacked (Development)
 
@@ -125,18 +125,6 @@ extension/
 5. The extension icon appears in your toolbar
 6. Click the icon, then open the dashboard to configure Supabase
 
-### Firefox
-
-1. Navigate to `about:debugging#/runtime/this-firefox`
-2. Click **Load Temporary Add-on**
-3. Select any file inside the `extension/` folder
-4. Note: temporary add-ons are removed on browser restart in Firefox development mode
-
-### Chrome Web Store / Firefox Add-ons
-
-For production distribution, package the extension folder as a `.zip` and submit through the respective developer portals.
-
----
 
 ## Supabase Setup
 
