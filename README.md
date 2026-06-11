@@ -2,6 +2,8 @@
 
 A browser extension for Chrome and Firefox that lets you highlight text on any webpage, attach notes and tags, and sync everything across your devices through a free Supabase backend. Highlights survive page refreshes, browser restarts, and reinstalls. Your data belongs to you.
 
+DISCLAIMER: THIS TOOL HAS BEEN CREATED USING CLAUDE AI IN ITS ENTIRETY
+
 ---
 
 ## Table of Contents
