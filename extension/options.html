@@ -343,6 +343,56 @@
               <div id="auto-delete-feedback" class="feedback hidden"></div>
             </section>
 
+            <!-- ── Site Controls ── -->
+            <section class="settings-card">
+              <h2>Site Controls</h2>
+              <p class="settings-desc">
+                Control where highlighting is active. Some sites are permanently blocked
+                (social media, AI chats, volatile-URL services). You can also disable
+                highlighting on any site manually — useful for sites where text selection
+                is part of normal use and the color picker gets in the way.
+              </p>
+
+              <!-- System blocked domains (read-only) -->
+              <div class="site-control-group">
+                <div class="site-control-group-label">Always blocked <span class="setup-badge">System</span></div>
+                <div class="site-control-system-list" id="system-blocked-list">
+                  <span class="blocked-chip">outlook.office.com</span>
+                  <span class="blocked-chip">twitter.com / x.com</span>
+                  <span class="blocked-chip">instagram.com</span>
+                  <span class="blocked-chip">facebook.com</span>
+                  <span class="blocked-chip">threads.net</span>
+                  <span class="blocked-chip">tiktok.com</span>
+                  <span class="blocked-chip">reddit.com</span>
+                  <span class="blocked-chip">linkedin.com</span>
+                  <span class="blocked-chip">chatgpt.com</span>
+                  <span class="blocked-chip">claude.ai</span>
+                  <span class="blocked-chip">gemini.google.com</span>
+                  <span class="blocked-chip">copilot.microsoft.com</span>
+                  <span class="blocked-chip">perplexity.ai</span>
+                  <span class="blocked-chip">mail.google.com</span>
+                  <span class="blocked-chip">docs.google.com</span>
+                  <span class="blocked-chip">drive.google.com</span>
+                  <span class="blocked-chip">meet.google.com</span>
+                  <span class="blocked-chip">calendar.google.com</span>
+                </div>
+              </div>
+
+              <!-- User-controlled blocked domains -->
+              <div class="site-control-group" style="margin-top:16px">
+                <div class="site-control-group-label">Disabled by you <span class="site-user-count mono" id="user-blocked-count">0 sites</span></div>
+                <div id="user-blocked-list" class="user-blocked-list">
+                  <p class="no-blocks-msg" id="no-blocks-msg">No sites disabled. Use the toggle in the extension popup on any page to disable highlighting there.</p>
+                </div>
+                <!-- Manual add -->
+                <div class="site-add-row">
+                  <input id="block-domain-input" type="text" placeholder="e.g. notion.so" class="site-input" />
+                  <button id="block-domain-btn" class="btn-secondary">Disable</button>
+                </div>
+                <div id="block-feedback" class="feedback hidden"></div>
+              </div>
+            </section>
+
             <!-- ── Status ── -->
             <section class="settings-card">
               <h2>Status</h2>

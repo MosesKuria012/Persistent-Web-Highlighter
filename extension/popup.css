@@ -185,3 +185,47 @@ footer {
 .color-dot[data-color="orange"] { background-color: #fdba74; }
 .color-dot[data-color="teal"] { background-color: #5eead4; }
 .color-dot[data-color="pink"] { background-color: #f9a8d4; }
+
+/* ── Domain toggle button ── */
+.toggle-on  { color: #34d399 !important; }
+.toggle-off { color: #f87171 !important; }
+
+#toggle-site-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+}
+#toggle-site-btn:hover { background: #1e1e38; }
+
+/* ── Site blocked notice ── */
+#site-blocked-state { display: none; }
+#site-blocked-state:not(.hidden) { display: block; }
+
+.blocked-notice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 32px 20px;
+  text-align: center;
+}
+
+.blocked-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #3a3a60;
+}
+
+.blocked-sub {
+  font-size: 11px;
+  color: #2a2a48;
+  line-height: 1.6;
+}

@@ -176,13 +176,121 @@
     sorted.forEach(h => list.appendChild(renderHighlightItem(h, tab)));
   }
 
+  const USER_BLOCKED_KEY = 'wh_blocked_domains';
+
+  // System-blocked hostnames (must match content.js list)
+  const SYSTEM_BLOCKED = new Set([
+    'outlook.office.com','outlook.office365.com','outlook.live.com',
+    'twitter.com','x.com','www.twitter.com','www.x.com',
+    'instagram.com','www.instagram.com',
+    'facebook.com','www.facebook.com',
+    'threads.net','www.threads.net',
+    'tiktok.com','www.tiktok.com',
+    'reddit.com','www.reddit.com',
+    'linkedin.com','www.linkedin.com',
+    'chatgpt.com','chat.openai.com',
+    'claude.ai',
+    'gemini.google.com',
+    'copilot.microsoft.com',
+    'perplexity.ai','www.perplexity.ai',
+    'mail.google.com','docs.google.com','drive.google.com',
+    'meet.google.com','calendar.google.com',
+  ]);
+
+  function getHostname(url) {
+    try { return new URL(url).hostname; } catch { return ''; }
+  }
+
+  async function getUserBlockedDomains() {
+    return new Promise(r => chrome.storage.local.get([USER_BLOCKED_KEY], res => r(res[USER_BLOCKED_KEY] || [])));
+  }
+
+  async function setUserBlockedDomains(list) {
+    return new Promise(r => chrome.storage.local.set({ [USER_BLOCKED_KEY]: list }, r));
+  }
+
+  function showBlockedState(isSystem, hostname) {
+    document.getElementById('site-blocked-state')?.classList.remove('hidden');
+    document.getElementById('highlight-list-container')?.classList.add('hidden');
+    document.getElementById('empty-state')?.classList.add('hidden');
+    const title = document.getElementById('blocked-title');
+    const sub   = document.getElementById('blocked-sub');
+    if (isSystem) {
+      if (title) title.textContent = 'Not supported here';
+      if (sub)   sub.textContent   = `Highlighting is unavailable on ${hostname}.`;
+    } else {
+      if (title) title.textContent = 'Highlighting disabled';
+      if (sub)   sub.textContent   = `You turned off highlighting on ${hostname}. Click the eye icon to re-enable.`;
+    }
+    // Hide toggle button for system-blocked (user can't override)
+    const toggleBtn = document.getElementById('toggle-site-btn');
+    if (toggleBtn && isSystem) toggleBtn.style.display = 'none';
+  }
+
+  function updateToggleButton(isBlocked) {
+    const btn     = document.getElementById('toggle-site-btn');
+    const iconOn  = document.getElementById('toggle-icon-on');
+    const iconOff = document.getElementById('toggle-icon-off');
+    if (!btn) return;
+    if (isBlocked) {
+      btn.classList.remove('toggle-on');
+      btn.classList.add('toggle-off');
+      btn.title = 'Highlighting disabled on this site — click to enable';
+      if (iconOn)  iconOn.style.display  = 'none';
+      if (iconOff) iconOff.style.display = '';
+    } else {
+      btn.classList.add('toggle-on');
+      btn.classList.remove('toggle-off');
+      btn.title = 'Highlighting enabled on this site — click to disable';
+      if (iconOn)  iconOn.style.display  = '';
+      if (iconOff) iconOff.style.display = 'none';
+    }
+  }
+
   async function init() {
     const tab = await getCurrentTab();
     if (!tab || !tab.url) { renderList([], null); return; }
 
+    const hostname      = getHostname(tab.url);
+    const isSystemBlock = SYSTEM_BLOCKED.has(hostname);
+    const blockedList   = await getUserBlockedDomains();
+    const isUserBlock   = blockedList.includes(hostname);
+
+    if (isSystemBlock) {
+      showBlockedState(true, hostname);
+      return;
+    }
+
+    if (isUserBlock) {
+      showBlockedState(false, hostname);
+      updateToggleButton(true);
+      // Wire toggle to re-enable
+      document.getElementById('toggle-site-btn')?.addEventListener('click', async () => {
+        const list = await getUserBlockedDomains();
+        const updated = list.filter(d => d !== hostname);
+        await setUserBlockedDomains(updated);
+        // Tell content script to reload page
+        chrome.tabs.sendMessage(tab.id, { type: 'WH_TOGGLE_DOMAIN', blocked: false }).catch(() => {});
+        window.close();
+      });
+      return;
+    }
+
+    // Normal state
+    updateToggleButton(false);
     const highlights = await loadHighlightsForUrl(tab.url);
     renderList(highlights, tab);
     updateSyncIndicator();
+
+    // Toggle off handler
+    document.getElementById('toggle-site-btn')?.addEventListener('click', async () => {
+      const list = await getUserBlockedDomains();
+      if (!list.includes(hostname)) list.push(hostname);
+      await setUserBlockedDomains(list);
+      chrome.tabs.sendMessage(tab.id, { type: 'WH_TOGGLE_DOMAIN', blocked: true }).catch(() => {});
+      updateToggleButton(true);
+      showBlockedState(false, hostname);
+    });
 
     // Dashboard button
     document.getElementById('open-dashboard')?.addEventListener('click', () => {

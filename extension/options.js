@@ -147,6 +147,7 @@ CREATE TRIGGER highlights_rate_limit
     setupCopyBtn();
     setupViewMode();
     setupSidebarFilters();
+    setupSiteControls();
     await Promise.all([loadDashboard(), loadSettings()]);
   });
 
@@ -972,6 +973,110 @@ CREATE TRIGGER highlights_rate_limit
 
 })();
 
+
+  // ─── Site Controls ───────────────────────────────────────────────────────────
+  const USER_BLOCKED_KEY = 'wh_blocked_domains';
+
+  async function getUserBlockedDomains() {
+    return new Promise(r => chrome.storage.local.get([USER_BLOCKED_KEY], res => r(res[USER_BLOCKED_KEY] || [])));
+  }
+
+  async function setUserBlockedDomains(list) {
+    return new Promise(r => chrome.storage.local.set({ [USER_BLOCKED_KEY]: list }, r));
+  }
+
+  function normalizeDomainInput(raw) {
+    // Strip protocol, path, trailing slashes — keep just the hostname
+    let s = raw.trim().toLowerCase();
+    if (s.startsWith('http://') || s.startsWith('https://')) {
+      try { s = new URL(s).hostname; } catch {}
+    }
+    s = s.replace(/^www\./, '').replace(/[/:].*$/, '').trim();
+    return s;
+  }
+
+  function renderUserBlockedList(list) {
+    const container = document.getElementById('user-blocked-list');
+    const noMsg     = document.getElementById('no-blocks-msg');
+    const countEl   = document.getElementById('user-blocked-count');
+    if (!container) return;
+
+    if (countEl) countEl.textContent = `${list.length} site${list.length !== 1 ? 's' : ''}`;
+
+    // Clear except the no-blocks message
+    Array.from(container.children).forEach(el => {
+      if (el.id !== 'no-blocks-msg') el.remove();
+    });
+
+    if (!list.length) {
+      noMsg?.classList.remove('hidden');
+      return;
+    }
+    noMsg?.classList.add('hidden');
+
+    list.forEach(domain => {
+      const row = document.createElement('div');
+      row.className = 'user-blocked-row';
+
+      const img = document.createElement('img');
+      img.src = `https://www.google.com/s2/favicons?domain=${domain}&sz=16`;
+      img.className = 'user-blocked-favicon';
+      img.onerror = () => { img.style.display = 'none'; };
+
+      const name = document.createElement('span');
+      name.className = 'user-blocked-domain';
+      name.textContent = domain;
+
+      const removeBtn = document.createElement('button');
+      removeBtn.className = 'user-blocked-remove';
+      removeBtn.title = `Re-enable highlighting on ${domain}`;
+      removeBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
+      removeBtn.addEventListener('click', async () => {
+        const current = await getUserBlockedDomains();
+        const updated = current.filter(d => d !== domain);
+        await setUserBlockedDomains(updated);
+        renderUserBlockedList(updated);
+      });
+
+      row.appendChild(img);
+      row.appendChild(name);
+      row.appendChild(removeBtn);
+      container.appendChild(row);
+    });
+  }
+
+  function setupSiteControls() {
+    // Load and render existing user-blocked list
+    getUserBlockedDomains().then(renderUserBlockedList);
+
+    // Manual add
+    const input   = document.getElementById('block-domain-input');
+    const addBtn  = document.getElementById('block-domain-btn');
+    const fb      = document.getElementById('block-feedback');
+
+    addBtn?.addEventListener('click', async () => {
+      const raw = input?.value || '';
+      const domain = normalizeDomainInput(raw);
+      if (!domain || !domain.includes('.')) {
+        showFeedback(fb, 'error', 'Enter a valid domain, e.g. notion.so');
+        return;
+      }
+      const current = await getUserBlockedDomains();
+      if (current.includes(domain)) {
+        showFeedback(fb, 'error', `${domain} is already disabled.`);
+        return;
+      }
+      current.push(domain);
+      await setUserBlockedDomains(current);
+      renderUserBlockedList(current);
+      if (input) input.value = '';
+      showFeedback(fb, 'success', `✓ Highlighting disabled on ${domain}.`);
+    });
+
+    input?.addEventListener('keydown', e => {
+      if (e.key === 'Enter') addBtn?.click();
+    });
+  }
 
 // ═══════════════════════════════════════════════════════════════
 // SIDEBAR FILTERING & VIEW MODE (additions — do not remove above)

@@ -4,11 +4,94 @@
  * Depends on anchoring.js (window.AnchoringLib) being loaded first.
  */
 
-(function () {
+(async function () {
   'use strict';
 
   if (window.__whLoaded) return;
   window.__whLoaded = true;
+
+  // ─── Domain Blocklist ─────────────────────────────────────────────────────────
+  // These domains are always blocked regardless of user settings.
+  // Reasons: volatile/session URLs (Outlook, AI chats), social feeds with
+  // ephemeral content, or sites where accidental highlights cause confusion.
+  const SYSTEM_BLOCKED_PATTERNS = [
+    // Outlook Web — session-based URLs, iframes, CSP issues
+    /^(outlook\.office\.com|outlook\.office365\.com|outlook\.live\.com)$/,
+    // Social media feeds — content is ephemeral and URL-unstable
+    /^(www\.)?(twitter\.com|x\.com)$/,
+    /^(www\.)?instagram\.com$/,
+    /^(www\.)?facebook\.com$/,
+    /^(www\.)?threads\.net$/,
+    /^(www\.)?tiktok\.com$/,
+    /^(www\.)?reddit\.com$/,
+    /^(www\.)?linkedin\.com$/,
+    // AI chat interfaces — evolving URLs, conversation context changes constantly
+    /^(chatgpt\.com|chat\.openai\.com)$/,
+    /^(claude\.ai)$/,
+    /^(gemini\.google\.com)$/,
+    /^(copilot\.microsoft\.com)$/,
+    /^(www\.)?perplexity\.ai$/,
+    // Google products with volatile/authenticated content
+    /^(mail\.google\.com)$/,          // Gmail
+    /^(docs\.google\.com)$/,          // Google Docs (has own annotation system)
+    /^(drive\.google\.com)$/,         // Google Drive
+    /^(meet\.google\.com)$/,          // Google Meet
+    /^(calendar\.google\.com)$/,      // Google Calendar
+    // Browser internal pages (these would fail anyway but exit cleanly)
+    /^(about|chrome|chrome-extension|moz-extension|edge)$/,
+  ];
+
+  const USER_BLOCKED_KEY = 'wh_blocked_domains';
+
+  function getHostname() {
+    try { return new URL(window.location.href).hostname; } catch { return ''; }
+  }
+
+  function isSystemBlocked(hostname) {
+    return SYSTEM_BLOCKED_PATTERNS.some(p => p.test(hostname));
+  }
+
+  async function isUserBlocked(hostname) {
+    return new Promise(r => {
+      chrome.storage.local.get([USER_BLOCKED_KEY], res => {
+        const blocked = res[USER_BLOCKED_KEY] || [];
+        r(blocked.includes(hostname));
+      });
+    });
+  }
+
+  // ─── Block check — runs before anything else ──────────────────────────────────
+  const _hostname = getHostname();
+
+  if (isSystemBlocked(_hostname)) {
+    // Silent exit — no UI, no storage access, no observers
+    console.log(`[PWH] Highlighting disabled on ${_hostname} (system blocked).`);
+    return;
+  }
+
+  // User-toggle check is async — wrap the rest of the script init in a guard
+  // We use a self-invoking async function to avoid top-level await in an IIFE
+  let _userBlockedResult = false;
+  await new Promise(r => {
+    chrome.storage.local.get([USER_BLOCKED_KEY], res => {
+      const blocked = res[USER_BLOCKED_KEY] || [];
+      _userBlockedResult = blocked.includes(_hostname);
+      r();
+    });
+  });
+
+  if (_userBlockedResult) {
+    console.log(`[PWH] Highlighting disabled on ${_hostname} (user preference).`);
+    // Still listen for toggle-on messages from popup/options
+    chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+      if (msg.type === 'WH_TOGGLE_DOMAIN') {
+        // Reload the page so the content script re-evaluates from scratch
+        if (!msg.blocked) window.location.reload();
+        sendResponse({ ok: true });
+      }
+    });
+    return;
+  }
 
   // ─── Constants ────────────────────────────────────────────────────────────────
   const COLORS = [
@@ -459,7 +542,7 @@
   // ─── Note Hover Preview ────────────────────────────────────────────────────────
   function showNoteOrTagPreview(span) {
     const note = span.dataset.note || '';
-    const tags = (() => { try { return JSON.parse(span.dataset.tags || '[]'); } catch { return []; } })();
+    const tags = (() => { try { return JSON.parse(span.dataset.tags || '[]'); } catch { return []; } })().catch(e => console.error('[PWH] Init error:', e));
     if (!note && !tags.length) return;
     if (deleteTooltip) return;
 
@@ -656,7 +739,7 @@
       deleteHighlight(msg.id).then(() => sendResponse({ success: true }));
       return true;
     }
-    if (msg.type === 'GET_PAGE_URL')   { sendResponse({ url: PAGE_URL }); return false; }
+    if (msg.type === 'GET_PAGE_URL') { sendResponse({ url: PAGE_URL }); return false; }
     if (msg.type === 'SCROLL_TO_HIGHLIGHT') {
       const span = document.querySelector(`[data-highlight-id="${msg.id}"]`);
       if (span) {
@@ -665,6 +748,25 @@
         setTimeout(() => { span.style.outline = ''; }, 1200);
       }
       sendResponse({ found: !!span });
+      return false;
+    }
+    // Domain status query — used by popup to show enable/disable toggle
+    if (msg.type === 'WH_GET_DOMAIN_STATUS') {
+      sendResponse({
+        hostname:        _hostname,
+        systemBlocked:   false,   // if we reach here, not system-blocked
+        userBlocked:     false,   // if we reach here, not user-blocked
+        highlightingOn:  true,
+      });
+      return false;
+    }
+    // Toggle from popup — when disabling, reload so the block check fires next time
+    if (msg.type === 'WH_TOGGLE_DOMAIN') {
+      if (msg.blocked) {
+        // Turning OFF — reload after a short delay so any open tooltip closes first
+        setTimeout(() => window.location.reload(), 200);
+      }
+      sendResponse({ ok: true });
       return false;
     }
   });

@@ -1544,3 +1544,152 @@ body.view-compact .card-color-bar[data-color="pink"]   { background: #f9a8d4; }
   border-color: rgba(59,130,246,0.25);
 }
 [data-theme="light"] .auth-user-row { border-bottom-color: var(--border2); }
+
+/* ═══════════════════════════════════════════════════
+   SITE CONTROLS
+═══════════════════════════════════════════════════ */
+
+.site-control-group { margin-top: 14px; }
+
+.site-control-group-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  font-family: 'IBM Plex Mono', monospace;
+  margin-bottom: 8px;
+}
+
+.site-user-count {
+  font-size: 10px;
+  color: var(--text-3);
+  text-transform: none;
+  letter-spacing: 0;
+  margin-left: auto;
+}
+
+/* System blocked chips */
+.site-control-system-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.blocked-chip {
+  display: inline-flex;
+  align-items: center;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 3px 9px;
+  font-size: 11px;
+  color: var(--text-3);
+  font-family: 'IBM Plex Mono', monospace;
+  user-select: none;
+}
+
+/* User blocked list */
+.user-blocked-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-bottom: 10px;
+}
+
+.no-blocks-msg {
+  font-size: 12px;
+  color: var(--text-3);
+  font-style: italic;
+  padding: 6px 0;
+}
+.no-blocks-msg.hidden { display: none; }
+
+.user-blocked-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 7px;
+  transition: border-color 0.1s;
+}
+.user-blocked-row:hover { border-color: var(--border); }
+
+.user-blocked-favicon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.user-blocked-domain {
+  flex: 1;
+  font-size: 12px;
+  font-family: 'IBM Plex Mono', monospace;
+  color: var(--text);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.user-blocked-remove {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 5px;
+  color: var(--text-3);
+  display: flex;
+  align-items: center;
+  transition: color 0.1s, background 0.1s;
+  flex-shrink: 0;
+}
+.user-blocked-remove:hover { color: var(--red); background: rgba(248,113,113,0.08); }
+
+/* Manual add row */
+.site-add-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.site-input {
+  flex: 1;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 6px 10px;
+  color: var(--text);
+  font-size: 12px;
+  font-family: 'IBM Plex Mono', monospace;
+  outline: none;
+  transition: border-color 0.15s;
+  min-width: 0;
+}
+.site-input:focus { border-color: var(--accent); }
+.site-input::placeholder { color: var(--text-3); }
+
+/* Light mode */
+[data-theme="light"] .blocked-chip {
+  background: var(--surface2);
+  border-color: var(--border);
+  color: var(--text-3);
+}
+[data-theme="light"] .user-blocked-row {
+  background: var(--surface2);
+  border-color: var(--border2);
+}
+[data-theme="light"] .site-input {
+  background: var(--surface2);
+  border-color: var(--border);
+  color: var(--text);
+}
+
+/* ═══════════════════════════════════════════════════
+   POPUP — TOGGLE BUTTON + BLOCKED STATE
+═══════════════════════════════════════════════════ */
