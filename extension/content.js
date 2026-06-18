@@ -82,13 +82,13 @@
 
   if (_userBlockedResult) {
     console.log(`[PWH] Highlighting disabled on ${_hostname} (user preference).`);
-    // Still listen for toggle-on messages from popup/options
+    // Still listen for toggle-on messages from popup — signal background to re-inject
     chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-      if (msg.type === 'WH_TOGGLE_DOMAIN') {
-        // Reload the page so the content script re-evaluates from scratch
-        if (!msg.blocked) window.location.reload();
-        sendResponse({ ok: true });
+      if (msg.type === 'WH_TOGGLE_DOMAIN' && !msg.blocked) {
+        // Ask background to re-inject the content scripts into this tab
+        chrome.runtime.sendMessage({ type: 'WH_REINJECT_CONTENT_SCRIPT' }).catch(() => {});
       }
+      sendResponse({ ok: true });
     });
     return;
   }
@@ -542,7 +542,7 @@
   // ─── Note Hover Preview ────────────────────────────────────────────────────────
   function showNoteOrTagPreview(span) {
     const note = span.dataset.note || '';
-    const tags = (() => { try { return JSON.parse(span.dataset.tags || '[]'); } catch { return []; } })().catch(e => console.error('[PWH] Init error:', e));
+    const tags = (() => { try { return JSON.parse(span.dataset.tags || '[]'); } catch { return []; } })();
     if (!note && !tags.length) return;
     if (deleteTooltip) return;
 
@@ -760,11 +760,31 @@
       });
       return false;
     }
-    // Toggle from popup — when disabling, reload so the block check fires next time
+    // Toggle from popup — disable/enable without page reload
     if (msg.type === 'WH_TOGGLE_DOMAIN') {
       if (msg.blocked) {
-        // Turning OFF — reload after a short delay so any open tooltip closes first
-        setTimeout(() => window.location.reload(), 200);
+        // Turning OFF — remove all highlight spans, hide any open UI
+        hideColorPicker();
+        hideDeleteTooltip();
+        hideNotePreview();
+        document.getElementById('wh-dupe-warning')?.remove();
+        activeRange = null;
+        // Unwrap all highlight spans, restoring plain text
+        document.querySelectorAll('.wh-highlight').forEach(span => {
+          const p = span.parentNode;
+          if (!p) return;
+          while (span.firstChild) p.insertBefore(span.firstChild, span);
+          p.removeChild(span);
+          try { p.normalize(); } catch {}
+        });
+        // Stop polling interval to avoid ghost restores while disabled
+        clearInterval(_pollInterval);
+        clearTimeout(_spaTransitionTimer);
+        // Mark as unloaded so re-injection starts fresh
+        window.__whLoaded = false;
+      } else {
+        // Turning ON — ask background to re-inject content scripts into this tab
+        chrome.runtime.sendMessage({ type: 'WH_REINJECT_CONTENT_SCRIPT' }).catch(() => {});
       }
       sendResponse({ ok: true });
       return false;

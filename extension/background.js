@@ -605,6 +605,20 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     })();
     return true;
   }
+
+  // Re-inject content scripts into the sender tab (used by toggle-on flow)
+  if (message.type === 'WH_REINJECT_CONTENT_SCRIPT') {
+    const tabId = sender?.tab?.id;
+    if (!tabId) { sendResponse({ ok: false, error: 'no tab id' }); return false; }
+    chrome.scripting.executeScript({
+      target: { tabId },
+      files: ['anchoring.js', 'content.js'],
+    }).then(() => {
+      chrome.scripting.insertCSS({ target: { tabId }, files: ['content.css'] }).catch(() => {});
+      sendResponse({ ok: true });
+    }).catch(err => sendResponse({ ok: false, error: err.message }));
+    return true;
+  }
 });
 
 // Startup sync (only if authenticated)
